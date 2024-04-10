@@ -6,19 +6,19 @@ const theme = extendTheme({
   },
   colorSchemes: {
     light: {
-      // palette: {
-      //   primary: {
-      //     main: '#ff5252'
-      //   }
-      // }
+      palette: {
+        primary: {
+          main: '#5DEBD7'
+        }
+      }
     },
     dark: {
-      // palette: {
-      //   primary: {
-      //     main: '#000'
-      //   }
+      palette: {
+        primary: {
+          main: '#000'
+        }
 
-      // }
+      }
     }
   }
   // other properties
