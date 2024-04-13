@@ -23,24 +23,28 @@ function AppBar() {
       height: (theme) => theme.trello.appBarHeight,
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
+      overflowX: 'auto'
     }}>
       <Box sx={{ display: 'flex', alignItems:'center', gap: 2 }}>
         <AppsIcon sx = {{ color: 'primary.main' }}/>
         <Box sx={{ display: 'flex', alignItems:'center', gap: 0.5 }}>
-          <SvgIcon component={TrelloIcon} inheritViewBox sx ={{ color: 'primary.main', width:'20px', height: '20px' }}/>
+          <SvgIcon component={TrelloIcon} inheritViewBox sx ={{ color: 'primary.main', width:'15px', height: '15px' }}/>
           <Typography variant="span" fontSize={'1.2rem'} fontWeight={'bold'} color={'primary.main'}>Trello</Typography>
         </Box>
-        <Workspace/>
-        <Recent/>
-        <Starred/>
-        <Template/>
 
-        <Button variant="outlined">Create</Button>
+        <Box sx={{ display: { xs:'none', md: 'flex' }, gap: 1 }}>
+          <Workspace/>
+          <Recent/>
+          <Starred/>
+          <Template/>
+          <Button variant="outlined">Create</Button>
+        </Box>
+
       </Box>
 
       <Box sx={{ display: 'flex', alignItems:'center', gap: 2 }}>
-        <TextField id="outlined-search" label="Search..." type="search" size='small'/>
+        <TextField id="outlined-search" label="Search..." type="search" size='small' sx={{ minWidth: '120px' }}/>
         <ModeSelect/>
 
         <Tooltip title="Notification">
