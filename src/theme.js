@@ -8,7 +8,7 @@ const theme = extendTheme({
     light: {
       palette: {
         primary: {
-          main: '#B3C8CF'
+          main: '#9BCF53'
         }
       }
     },

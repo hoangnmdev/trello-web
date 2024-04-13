@@ -32,7 +32,7 @@ function Profile() {
           aria-haspopup="true"
           aria-expanded={open ? 'true' : undefined}
         >
-          <Avatar sx={{ width: 30, height: 30 }}
+          <Avatar sx={{ width: 34, height: 34 }}
             alt='MinhHoangDev'
             src="src\assets\img_profile.jpg"
           />
