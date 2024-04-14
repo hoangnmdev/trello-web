@@ -20,7 +20,7 @@ function Template() {
   }
   return (
     <Box>
-      <Button
+      <Button sx={{ color: 'white' }}
         id="basic-button-templae"
         aria-controls={open ? 'basic-menu-template' : undefined}
         aria-haspopup="true"
