@@ -1,25 +1,18 @@
 import { experimental_extendTheme as extendTheme } from '@mui/material/styles'
+
+const APP_BAR_HEIGHT = '58px'
+const BOARD_BAR_HEIGHT = '60px'
+const BOARD_CONTENT_HEIGHT = `calc(100vh - ${APP_BAR_HEIGHT} - ${BOARD_BAR_HEIGHT})`
+
 const theme = extendTheme({
   trello: {
-    appBarHeight: '58px',
-    boardBarHeight: '60px'
+    appBarHeight: APP_BAR_HEIGHT,
+    boardBarHeight: BOARD_BAR_HEIGHT,
+    boardContentHeight: BOARD_CONTENT_HEIGHT
   },
   colorSchemes: {
-    light: {
-      palette: {
-        primary: {
-          main: '#9BCF53'
-        }
-      }
-    },
-    dark: {
-      palette: {
-        primary: {
-          main: '#5C5470'
-        }
-
-      }
-    }
+    light: {},
+    dark: {}
   },
   components: {
     MuiCssBaseline: {
@@ -51,8 +44,13 @@ const theme = extendTheme({
     },
     MuiInputLabel: {
       styleOverrides: {
+        root: { fontSize: '0.875rem' }
+      }
+    },
+    MuiTypography: {
+      styleOverrides: {
         root: {
-          fontSize: '0.875rem'
+          '&.MuiTypography-body1': { fontSize: '0.875rem' }
         }
       }
     },
