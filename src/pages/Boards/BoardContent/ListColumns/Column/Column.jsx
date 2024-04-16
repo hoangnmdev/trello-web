@@ -16,8 +16,11 @@ import { ContentCopy } from '@mui/icons-material'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import { useState } from 'react'
 import ListCards from './ListCards/ListCards'
+import { mapOrder } from '~/utils/sorts'
 
-function Column() {
+function Column({ column }) {
+  const orderCard = mapOrder(column?.cards, column?.cardOrderIds, '_id')
+
   const [anchorEl, setAnchorEl] = useState(null)
   const open = Boolean(anchorEl)
   const handleClick = (event) => {setAnchorEl(event.currentTarget)}
@@ -46,7 +49,7 @@ function Column() {
           cursor: 'pointer',
           fontSize: '1rem'
         }}>
-    Column Title
+          {column?.title}
         </Typography>
 
         <Box>
@@ -99,7 +102,7 @@ function Column() {
         </Box>
       </Box>
       {/**List Cards*/}
-      <ListCards/>
+      <ListCards cards = {orderCard}/>
 
       {/**Box Column Footer*/}
       <Box sx={{
