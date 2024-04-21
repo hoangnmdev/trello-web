@@ -31,6 +31,7 @@ function BoardContent({ board }) {
   const [activeDragItemId, setActiveDragItemId] = useState(null)
   const [activeDragItemType, setActiveDragItemType] = useState(null)
   const [activeDragItemData, setActiveDragItemData] = useState(null)
+  const [oldColumnWhenDraggingCard, setOldColumnWhenDraggingCard] = useState(null)
 
   useEffect(() => {
     setorderColumnsState(mapOrder(board?.columns, board?.columnOrderIds, '_id'))
@@ -48,6 +49,11 @@ function BoardContent({ board }) {
     setActiveDragItemId(event?.active?.id)
     setActiveDragItemType(event?.active?.data?.current?.columnId ? ACTIVE_DRAG_ITEM_TYPE.CARD : ACTIVE_DRAG_ITEM_TYPE.COLUMN)
     setActiveDragItemData(event?.active?.data?.current)
+
+    // Nếu là kéo card thì mới thực hiện hành động giá trị oldColumn
+    if (event?.active?.data?.current?.columnId) {
+      setOldColumnWhenDraggingCard(findColumnByCardId(event?.active?.id))
+    }
   }
   // Trigger trong quá trình kéo (drag) một phần tử => hành động kéo thả (drop)
   const handleDragOver = (event) => {
@@ -120,34 +126,89 @@ function BoardContent({ board }) {
   }
   //Trigger khi kết thúc hành động kéo một phần tử => hành động thả (drop)
   const handleDragEnd = (event) => {
-    // console.log('handleDragEnd', event)
-
-    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) {
-      return
-    }
+    // console.log('handleDragEnd: ', event)
     const { active, over } = event
+
     //Cần đảm bảo nếu không tồn tại active hoặc over (Khi kéo ra khỏi phạm vi container) thì không làm gì (tránh crash trang)
     if (!active || !over) return
-    //Nếu vị trí sau khi kéo thả khác với vị trí ban đầu
-    if (active.id !== over.id) {
-      //Lấy vị trí cũ (từ thằng active)
-      const oldIndex = orderColumnsState.findIndex(c => c._id == active.id)
 
-      //Lấy vị trí mới (từ thằng over)
-      const newIndex = orderColumnsState.findIndex(c => c._id == over.id)
-      //Dùng arrayMove của thằng dnd-kit để sắp xếp lại mảng Columns ban đầu
-      const dndOrderedColumn = arrayMove(orderColumnsState, oldIndex, newIndex)
-      //Dung de xu ly API
-      // const dndOrderedColumnIds = dndOrderedColumn.map(c => c._id)
-      // console.log('dndOrderedColumnIds: ', dndOrderedColumnIds)
-      // console.log('dndOrderColumn: ', dndOrderedColumn)
+    // Xử lý kéo thả Cards
+    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.CARD) {
 
-      //Cập nhật lại state columns ban đầu sau khi kéo thả
-      setorderColumnsState(dndOrderedColumn)
+      //activeDraggingCard: là cái card đang được kéo
+      const { id: activeDraggingCardId, data: { current: activeDraggingCardData } } = active
+
+      // overCard: là cái card đang tương tác trên hoặc dưới so với cái card được kéo ở trên
+      const { id: overCardId } = over
+
+      //Tìm 2 cái columns theo cardId
+      const activeColumn = findColumnByCardId(activeDraggingCardId)
+      const overColumn = findColumnByCardId(overCardId)
+
+      //Nếu không tồn tại 1 trong 2 column thì không làm gì hết
+      if (!activeColumn || !overColumn) return
+
+      // Hành động kéo thả card giữa 2 column khác nhau
+      /* Phải dùng tới activeDragItemData.columnId hoặc oldColumnDraggingCard._id (set vào state từ bước handleDragStart)
+      chứ không phải activeData trong scope handleDragEnd này vì sau khi đi qua onDragOver tới đây là state đã bị cập nhật một lần rồi
+      */
+      if (oldColumnWhenDraggingCard._id !== overColumn._id) {
+        console.log('Hành động kéo thả card giữa 2 column khác nhau')
+      } else {
+        // Hành động kéo thả card trong cùng một cái column
+
+        //Lấy vị trí cũ (từ thằng oldColumnWhenDraggingCard)
+        const oldCardIndex = oldColumnWhenDraggingCard?.cards?.findIndex(c => c._id == activeDragItemId)
+
+        //Lấy vị trí mới (từ thằng overColumn)
+        const newCardIndex = oldColumnWhenDraggingCard?.cards?.findIndex(c => c._id == overCardId)
+
+        // Dùng arrayMove vì kéo card trong một cái column thì tương tự với logic kéo column trong một cái board content
+        const dndOrderedCards = arrayMove(oldColumnWhenDraggingCard?.cards, oldCardIndex, newCardIndex)
+
+        setorderColumnsState(prevColumns => {
+        //Clone mảng OrderedColumnsState cũ ra một cái mới để xử lý data rồi return - cập nhật lại OrderedColumnsState mới
+          const nextColumns = cloneDeep(prevColumns)
+
+          // Tìm tới cái Column mà chúng ta đang thả
+          const targetColumn = nextColumns.find(column => column._id === overColumn._id)
+
+          // Cập nhật lại 2 giá trị mới là card và cardOrderIds trong cái targetColumn
+          targetColumn.cards = dndOrderedCards
+          targetColumn.cardOrderIds = dndOrderedCards.map(card => card._id)
+
+          // Trả về giá trị state mới (chuẩn vị trí)
+          return nextColumns
+        })
+      }
+
     }
+    // Xử lý kéo thả Column trong một cái boardContent
+    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN) {
+      //Nếu vị trí sau khi kéo thả khác với vị trí ban đầu
+      if (active.id !== over.id) {
+        //Lấy vị trí cũ (từ thằng active)
+        const oldIndex = orderColumnsState.findIndex(c => c._id == active.id)
+
+        //Lấy vị trí mới (từ thằng over)
+        const newIndex = orderColumnsState.findIndex(c => c._id == over.id)
+        //Dùng arrayMove của thằng dnd-kit để sắp xếp lại mảng Columns ban đầu
+        const dndOrderedColumn = arrayMove(orderColumnsState, oldIndex, newIndex)
+        //Dung de xu ly API
+        // const dndOrderedColumnIds = dndOrderedColumn.map(c => c._id)
+        // console.log('dndOrderedColumnIds: ', dndOrderedColumnIds)
+        // console.log('dndOrderColumn: ', dndOrderedColumn)
+
+        //Cập nhật lại state columns ban đầu sau khi kéo thả
+        setorderColumnsState(dndOrderedColumn)
+      }
+    }
+
+    // Những dữ liệu sau khi kéo thả này luôn phải đưa về giá trị null mặc định ban đầu
     setActiveDragItemId(null)
     setActiveDragItemData(null)
     setActiveDragItemType(null)
+    setOldColumnWhenDraggingCard(null)
   }
   const customDropAnimation = {
     sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }
