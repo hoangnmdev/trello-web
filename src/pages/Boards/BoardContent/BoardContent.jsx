@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box'
 import ListColumns from './ListColumns/ListColumns'
 import { mapOrder } from '~/utils/sorts'
-import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor, DragOverlay, defaultDropAnimationSideEffects } from '@dnd-kit/core'
+import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor, DragOverlay, defaultDropAnimationSideEffects, closestCorners } from '@dnd-kit/core'
 import { useEffect, useState } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 
@@ -114,7 +114,6 @@ function BoardContent({ board }) {
           nextOverColumn.cardOrderIds = nextOverColumn.cards.map(card => card._id)
 
         }
-        console.log('next column: ', nextColumns)
         return nextColumns
       })
     }
@@ -158,7 +157,12 @@ function BoardContent({ board }) {
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
-      sensors={sensors}>
+      // Cảm biến (đã giải thích ở video số 30)
+      sensors={sensors}
+      /* Thuật toán phát hiện va chạm (nếu không có nó thì card với cover lớn sẽ không kéo qua Column được
+      vì lúc này nó đang bị conflict giữa card và column), chúng ta sẽ dùng closetCorners thay vì closetCenter
+      */
+      collisionDetection={closestCorners}>
       <Box sx={{
         bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#34495e' : '#1976d2'),
         width: '100%',
