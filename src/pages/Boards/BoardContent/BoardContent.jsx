@@ -1,8 +1,19 @@
 import Box from '@mui/material/Box'
 import ListColumns from './ListColumns/ListColumns'
 import { mapOrder } from '~/utils/sorts'
-import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor, DragOverlay, defaultDropAnimationSideEffects, closestCorners } from '@dnd-kit/core'
-import { useEffect, useState } from 'react'
+import { DndContext,
+  useSensor,
+  useSensors,
+  MouseSensor,
+  TouchSensor,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+  pointerWithin,
+  rectIntersection,
+  closestCorners,
+  getFirstCollision, 
+  closestCenter} from '@dnd-kit/core'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 
 import Column from './ListColumns/Column/Column'
@@ -33,6 +44,8 @@ function BoardContent({ board }) {
   const [activeDragItemData, setActiveDragItemData] = useState(null)
   const [oldColumnWhenDraggingCard, setOldColumnWhenDraggingCard] = useState(null)
 
+  // Điểm va chạm cuối cùng (xử lý thuật toán phát hiện va chạm)
+  const lastOverId = useRef(null)
   useEffect(() => {
     setorderColumnsState(mapOrder(board?.columns, board?.columnOrderIds, '_id'))
   }, [board])
@@ -239,20 +252,70 @@ function BoardContent({ board }) {
     setActiveDragItemType(null)
     setOldColumnWhenDraggingCard(null)
   }
+  /**
+   * Animation khi thả (Drop) phần tử - Test bằng cách kéo xong thả trực tiếp và nhìn phần giữ chỗ Overlay(video 32)
+   */
   const customDropAnimation = {
-    sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } }) }
+    sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.5' } } })
+  }
 
+  // Chúng ta sẽ custom lại chiến lược / thuật toán phát hiện va chạm tối ưu cho việc kéo thả card giữa nhiều columns (video 37 fix bug quan trọng)
+  // args = arguments = Các Đối số, tham số
+  const collisionDetectionStrangegy = useCallback((args) => {
+    // Trường hợp kéo column thì dùng thuật toán closesCorner là chuẩn nhất
+    if (activeDragItemType ===ACTIVE_DRAG_ITEM_TYPE.COLUMN) {
+      return closestCorners({ ...args })
+    }
+    // Tìm điểm giao nhau, va chạm - intersection với con trỏ
+    const pointerIntersections = pointerWithin(args)
+
+    // Thuật toán phát hiện va chạm sẽ trả về một mảng các va chạm ở đây
+    const intersections = pointerIntersections?.length > 0
+      ?pointerIntersections
+      : rectIntersection(args)
+
+    // Tìm overId đàu tiên trong intersections
+    let overId = getFirstCollision(intersections, 'id')
+
+    if (overId) {
+
+      /**
+       * Nếu cái over nó là column thì sẽ tìm tới cái cardId gần nhất bên trong khu vực va chạm đó dựa vào thuật toán
+       * phát hiện va chạm closestCenter hoặc closestCorners đều được. Tuy nhiên ở đây dùng closestCenter sẽ mượt mà hơn
+       * */
+      const checkColumn = orderColumnsState.find(column => column._id === overId)
+      if (checkColumn) {
+        // console.log('overId before: ', overId )
+        overId = closestCenter({
+          ...args,
+          droppableContainers: args.droppableContainers.filter(container => {
+            return (container.id !== overId) && (checkColumn?.cardOrderIds?.includes(container.id))
+          })
+        })[0]?.id
+      }
+      lastOverId.current = overId
+      // console.log('overId after: ', overId )
+      return [{ id: overId }]
+    }
+
+    return lastOverId.current ? [{ id: lastOverId.current }] : []
+  }, [activeDragItemType])
   return (
     <DndContext
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
       // Cảm biến (đã giải thích ở video số 30)
       sensors={sensors}
       /* Thuật toán phát hiện va chạm (nếu không có nó thì card với cover lớn sẽ không kéo qua Column được
       vì lúc này nó đang bị conflict giữa card và column), chúng ta sẽ dùng closetCorners thay vì closetCenter
       */
-      collisionDetection={closestCorners}>
+      //Update video 37: nếu chỉ có dùng cloestCorners sẽ có bug flickering + sai lệch dữ liệu (vui lòng xem video 37 sẽ rõ)
+      //Update video 37: Nếu chỉ dùng
+      // collisionDetection={closestCorners}
+      collisionDetection = {collisionDetectionStrangegy}
+
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+    >
       <Box sx={{
         bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#34495e' : '#1976d2'),
         width: '100%',
