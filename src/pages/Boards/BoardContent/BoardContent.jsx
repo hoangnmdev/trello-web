@@ -9,10 +9,9 @@ import { DndContext,
   DragOverlay,
   defaultDropAnimationSideEffects,
   pointerWithin,
-  rectIntersection,
   closestCorners,
-  getFirstCollision, 
-  closestCenter} from '@dnd-kit/core'
+  getFirstCollision
+} from '@dnd-kit/core'
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 
@@ -268,14 +267,20 @@ function BoardContent({ board }) {
     }
     // Tìm điểm giao nhau, va chạm - intersection với con trỏ
     const pointerIntersections = pointerWithin(args)
+    // console.log('pointerIntersections: ', pointerIntersections)
+
+    // Nếu pointerIntersections là mảng rỗng, return luôn không làm gì hết
+    // Fix triệt để cái bug flickering của thư viện Dnd-kit trong trường hợp sau:
+    // Kéo một card có image cover lớn và kéo lên phía trên cùng ra khỏi khu vực kéo thả
+    if (!pointerIntersections?.length) return
 
     // Thuật toán phát hiện va chạm sẽ trả về một mảng các va chạm ở đây
-    const intersections = pointerIntersections?.length > 0
-      ?pointerIntersections
-      : rectIntersection(args)
+    // const intersections = pointerIntersections?.length > 0
+    //   ?pointerIntersections
+    //   : rectIntersection(args)
 
     // Tìm overId đàu tiên trong intersections
-    let overId = getFirstCollision(intersections, 'id')
+    let overId = getFirstCollision(pointerIntersections, 'id')
 
     if (overId) {
 
@@ -286,7 +291,7 @@ function BoardContent({ board }) {
       const checkColumn = orderColumnsState.find(column => column._id === overId)
       if (checkColumn) {
         // console.log('overId before: ', overId )
-        overId = closestCenter({
+        overId = closestCorners({
           ...args,
           droppableContainers: args.droppableContainers.filter(container => {
             return (container.id !== overId) && (checkColumn?.cardOrderIds?.includes(container.id))
@@ -299,7 +304,7 @@ function BoardContent({ board }) {
     }
 
     return lastOverId.current ? [{ id: lastOverId.current }] : []
-  }, [activeDragItemType])
+  }, [activeDragItemType, orderColumnsState])
   return (
     <DndContext
       // Cảm biến (đã giải thích ở video số 30)
